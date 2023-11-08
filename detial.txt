@@ -1,0 +1,6 @@
+cuda:
+python.exe -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+cpu:
+python.exe -m pip install torch torchvision torchaudio -i https://pypi.tuna.tsinghua.edu.cn/simple
+卸载：
+pip uninstall -y torch torchvision torchaudio
