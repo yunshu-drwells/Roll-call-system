@@ -1,5 +1,7 @@
 # Roll-call-system
 
+<!-- 基于vits端到端语音合成实现的学生点名系统 -->
+
 # 声明
 
 - 鸣谢<a herf="https://github.com/CjangCjengh/vits.git">vits</a>
