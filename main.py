@@ -1,5 +1,8 @@
 # 导入所需的模块
 import re
+import threading
+import time
+
 import wx
 import wx.adv
 import random
@@ -9,11 +12,14 @@ from EditClass import EditClass
 from EditStudents import EditStudents
 from backup_json import BackUp
 from loadConfig import LoadConfig
+from Roulette import Roulette
 
 
 # 定义一个窗口类，继承自wx.Frame
 class MyFrame(wx.Frame):
     def __init__(self):
+        self.t_flag = threading.Event()  # 用于暂停线程的标识
+        self.t_running = threading.Event()  # 用于停止线程的标识
         self.classes_name = {'示例班级': ['学生1', '学生2', '学生3']}
         self.bj = BackUp(self)  # 用于序列化self.classes_name
         self.bj.get_back_up()
@@ -21,7 +27,7 @@ class MyFrame(wx.Frame):
         self.par = self.lc.getParser()
 
         # 调用父类的构造函数，设置窗口标题和大小
-        super().__init__(None, title="Roll Call System——@云舒于野", size=(600, 700))
+        super().__init__(None, title="Roll Call System", size=(600, 700))
 
         # 使用 `wx.EvtHandler.Bind()` 方法，
         # 绑定 `wx.EVT_CLOSE`事件。这个事件会在用户关闭程序的主窗口时触发，可以在事件处理函数中执行一些自定义的操作，比如询问用户是否保存修改、释放一些内存等。
@@ -159,6 +165,9 @@ class MyFrame(wx.Frame):
         self.button_students = wx.Button(panel, label="开始点名")
         self.button_students.Bind(wx.EVT_BUTTON, self.call_stus_random)
 
+        self.button_lucky = wx.Button(panel, label="随机挑选一个幸运儿")
+        self.button_lucky.Bind(wx.EVT_BUTTON, self.luck_one)
+
         self.label_random = wx.StaticText(panel, label="随机顺序点名整个班级  ")
         self.button_random = wx.Button(panel, label="开始点名")
         self.button_random.Bind(wx.EVT_BUTTON, self.call_all_stus_random)
@@ -166,6 +175,13 @@ class MyFrame(wx.Frame):
         self.label_all = wx.StaticText(panel, label="名单顺序点名整个班级  ")
         self.button_all = wx.Button(panel, label="开始点名")
         self.button_all.Bind(wx.EVT_BUTTON, self.call_all_stus)
+
+        self.button_pause = wx.Button(panel, label="暂停点名")
+        self.button_pause.Bind(wx.EVT_BUTTON, self.call_pause)
+        self.button_resume = wx.Button(panel, label="继续点名")
+        self.button_resume.Bind(wx.EVT_BUTTON, self.call_resume)
+        self.button_stop = wx.Button(panel, label="停止点名")
+        self.button_stop.Bind(wx.EVT_BUTTON, self.call_stop)
 
         self.label_log = wx.StaticText(panel, label="准备就绪！")
 
@@ -243,6 +259,10 @@ class MyFrame(wx.Frame):
         hbox3.Add(self.choice_students, 80, wx.EXPAND | wx.ALL, 5)
         hbox3.Add(self.button_students, 80, wx.EXPAND | wx.ALL, 5)
 
+        hbox3_1 = wx.BoxSizer(wx.HORIZONTAL)
+        hbox3_1.Add(self.button_lucky, 80, wx.EXPAND | wx.ALL, 5)
+
+
         hbox3_0 = wx.BoxSizer(wx.HORIZONTAL)
         hbox3_0.Add(self.label_all, 0, wx.EXPAND | wx.ALL, 5)
         hbox3_0.Add(self.button_all, 70, wx.EXPAND | wx.ALL, 5)
@@ -250,6 +270,11 @@ class MyFrame(wx.Frame):
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.label_random, 0, wx.EXPAND | wx.ALL, 5)
         hbox4.Add(self.button_random, 70, wx.EXPAND | wx.ALL, 5)
+
+        hbox4_1 = wx.BoxSizer(wx.HORIZONTAL)
+        hbox4_1.Add(self.button_pause, 70, wx.EXPAND | wx.ALL, 5)
+        hbox4_1.Add(self.button_resume, 70, wx.EXPAND | wx.ALL, 5)
+        hbox4_1.Add(self.button_stop, 70, wx.EXPAND | wx.ALL, 5)
 
         hbox4_0 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4_0.Add(self.label_log, 0, wx.EXPAND | wx.ALL, 5)
@@ -278,8 +303,10 @@ class MyFrame(wx.Frame):
         vbox.Add(hbox2_2, 0, wx.EXPAND)
         vbox.Add(hbox2_3, 0, wx.EXPAND)
         vbox.Add(hbox3, 0, wx.EXPAND)
+        vbox.Add(hbox3_1, 0, wx.EXPAND)
         vbox.Add(hbox3_0, 0, wx.EXPAND)
         vbox.Add(hbox4, 0, wx.EXPAND)
+        vbox.Add(hbox4_1, 0, wx.EXPAND)
         vbox.Add(hbox4_0, 0, wx.EXPAND)
         vbox.Add(hbox5, 0, wx.EXPAND)
         vbox.Add(hbox6, 0, wx.EXPAND)
@@ -323,7 +350,6 @@ class MyFrame(wx.Frame):
                 self.choice_students.SetSelection(0)
         else:
             self.choice_students.SetItems([])
-
 
     def choseClass(self, event):
         item_index = self.choice_classes.GetSelection()
@@ -431,14 +457,6 @@ class MyFrame(wx.Frame):
         # 刷新随机人数列表
         self.refresh_random_list()
 
-    def call_stu(self, event):
-        try:
-            t = Thread(target=self.call_stu_)
-            t.daemon = True
-            t.start()
-        except:
-            print("find_pwd Error: unable to start thread")
-
     # 有班级并且有学生被选中
     def stu_was_chosen(self):
         if self.no_class is False:
@@ -446,6 +464,14 @@ class MyFrame(wx.Frame):
             students = self.classes_name[chosen_class]
             if len(students) >= 1:
                 return True
+
+    def call_stu(self, event):
+        try:
+            t = Thread(target=self.call_stu_)
+            t.daemon = True
+            t.start()
+        except:
+            print("find_pwd Error: unable to start thread")
 
     def call_stu_(self):
         if self.stu_was_chosen():
@@ -523,11 +549,35 @@ class MyFrame(wx.Frame):
             self.label_log.SetLabel("error2: 没有学生被选中")
             print("没有学生被选中")
 
+    def call_pause(self, event):
+        self.t_flag.clear()  # 设置为False, 让线程阻塞
+
+    def call_resume(self, event):
+        self.t_flag.set()  # 设置为True, 让线程停止阻塞
+
+    def call_stop(self, event):
+        self.t_flag.set()  # 将线程从暂停状态恢复, 如何已经暂停的话
+        self.t_running.clear()  # 设置为False
+
+    def luck_one(self, event):
+        chosen_class = self.choices_classes[self.chosen_class_index]
+        students = self.classes_name[chosen_class]
+        self.r = Roulette('抽取一个幸运儿', students)
+        self.r.start()
+        self.r.draw_wheel()
+        # 播放hhhhh的音频
+        # self.pv.play_voice_audio_file('./sources/ohhhh.wav', self.chosen_device_index)
+        # self.pv.play_voice_('./sources/ohhhh.wav')
+
     def call_all_stus_random(self, event):
         try:
-            t = Thread(target=self.call_all_stus_random_)
-            t.daemon = True
-            t.start()
+            t_r = Thread(target=self.call_all_stus_random_)
+            t_r.daemon = True
+            # 通过标志位来控制线程阻塞、继续和终止
+            self.t_running.set()  # 将running设置为True
+            self.t_flag.set()  # 将flag设置为True
+            t_r.start()
+            # 如果点击了暂停按钮->阻塞子线程
         except:
             print("find_pwd Error: unable to start thread")
 
@@ -540,7 +590,16 @@ class MyFrame(wx.Frame):
                 chosen_class = self.choices_classes[self.chosen_class_index]
                 students = self.classes_name[chosen_class]
                 stu_names = self.generate_random_names(len(students))
-                self.pv.roll_call(stu_names, self.chosen_device_index, self.pause_time)
+                if students_num >= 1:
+                    chosen_class = self.choices_classes[self.chosen_class_index]
+                    students = self.classes_name[chosen_class]
+                    for i in range(len(students)):
+                        if self.t_running.is_set():
+                            if i == (len(students) - 1):
+                                self.t_running.clear()
+                            self.t_flag.wait()  # 为True时立即返回, 为False时阻塞直到内部的标识位为True后返回
+                            self.pv.roll_call(students[i], self.chosen_device_index, self.pause_time)
+                # self.pv.roll_call_list(stu_names, self.chosen_device_index, self.pause_time)
             else:
                 self.label_log.SetLabel("error: 这个班级没有学生")
                 print("这个班级没有学生")
@@ -550,9 +609,12 @@ class MyFrame(wx.Frame):
 
     def call_all_stus(self, event):
         try:
-            t = Thread(target=self.call_all_stus_)
-            t.daemon = True
-            t.start()
+            t_a = Thread(target=self.call_all_stus_)
+            t_a.daemon = True
+            # 通过标志位来控制线程阻塞、继续和终止
+            self.t_running.set()  # 将running设置为True
+            self.t_flag.set()  # 将flag设置为True
+            t_a.start()
         except:
             print("find_pwd Error: unable to start thread")
 
@@ -564,7 +626,13 @@ class MyFrame(wx.Frame):
             if students_num >= 1:
                 chosen_class = self.choices_classes[self.chosen_class_index]
                 students = self.classes_name[chosen_class]
-                self.pv.roll_call(students, self.chosen_device_index, self.pause_time)
+                for i in range(len(students)):
+                    if self.t_running.is_set():
+                        if i == (len(students)-1):
+                            self.t_running.clear()
+                        self.t_flag.wait()  # 为True时立即返回, 为False时阻塞直到内部的标识位为True后返回
+                        self.pv.roll_call(students[i], self.chosen_device_index, self.pause_time)
+                # self.pv.roll_call_list(students, self.chosen_device_index, self.pause_time)
             else:
                 self.label_log.SetLabel("error: 这个班级没有学生")
                 print("这个班级没有学生")

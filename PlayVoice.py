@@ -5,6 +5,8 @@
 import os
 import re
 import time
+import wave
+import numpy as np
 import soundfile as sf
 import sounddevice as sd
 from TTS import TTService
@@ -111,11 +113,32 @@ class PlayVoice():
     def play_voice_(self, path):
         playsound(path)
 
-    # 点名
-    def roll_call(self, stu_names, device_index, pause):
+    def play_voice_audio_file(self, audio_file, device_index):
+        # Load the audio file
+        with wave.open(audio_file, 'rb') as wf:
+            audio_data = wf.readframes(-1)
+            sample_width = wf.getsampwidth()
+            channels = wf.getnchannels()
+            sample_rate = wf.getframerate()
+            # Convert the audio data to a NumPy array
+        audio_array = np.frombuffer(audio_data, dtype=np.int16)
+
+        # 设置默认的输出设备
+        sd.default.device = device_index
+        # Play the audio
+        sd.play(audio_array, sample_rate)
+        sd.wait()
+
+    # 点名（列表）
+    def roll_call_list(self, stu_names, device_index, pause):
         for i in stu_names:
             time.sleep(pause)
             self.play_voice(i, device_index)
+
+    # 点一个名字
+    def roll_call(self, stu_name, device_index, pause):
+        time.sleep(pause)
+        self.play_voice(stu_name, device_index)
 
 
 del PlayVoice.generate_voice_file
@@ -130,8 +153,9 @@ if __name__ == '__main__':
     resp_text = "张三 李四 王五"
     # pv.play_voice_file(resp_text, 3)
     # pv.play_voice(resp_text, 3)
-    pv.change_speed('paimon', 1)
-    pv.play_voice(resp_text, 3)
+    # pv.change_speed('paimon', 1)
+    # pv.play_voice(resp_text, 3)
+    pv.play_voice_audio_file('./sources/ohhhh.wav', 3)
 
 
 '''
