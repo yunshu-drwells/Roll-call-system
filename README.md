@@ -8,9 +8,9 @@
 
 # 声明
 
-- 鸣谢<a herf="https://github.com/CjangCjengh/vits.git">vits</a>
+- 鸣谢<a href="https://github.com/CjangCjengh/vits.git">vits</a>
 
-- 本项目paimon语音音色模型所有权归原神母公司<a href="https://www.mihoyo.com/">米哈游</a>yunfei的语音模型归<a herf="https://space.bilibili.com/25876945/">极客湾</a>所有 禁止用于商业用途 仅限于交流学习
+- 本项目paimon语音音色模型所有权归原神母公司<a href="https://www.mihoyo.com/">米哈游</a>yunfei的语音模型归<a href="https://space.bilibili.com/25876945/">极客湾</a>所有 禁止用于商业用途 仅限于交流学习
 
 - 如果想增加自己的角色模型需要自行炼丹
 
