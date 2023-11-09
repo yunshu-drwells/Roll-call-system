@@ -2,6 +2,10 @@
 
 <!-- 基于vits端到端语音合成实现的学生点名系统 -->
 
+# 视频
+
+<a href="https://www.bilibili.com/video/BV1eM411S75m/">基于vits端到端实时语音合成实现的学生点名系统</a>
+
 # 声明
 
 - 鸣谢<a herf="https://github.com/CjangCjengh/vits.git">vits</a>
