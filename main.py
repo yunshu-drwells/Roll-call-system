@@ -198,7 +198,7 @@ class MyFrame(wx.Frame):
         self.hyper_link1 = wx.adv.HyperlinkCtrl(panel, id=wx.ID_ANY, label="gitee",
                                                     url="https://gitee.com/yhviyr/Roll-call-system")
         self.hyper_link2 = wx.adv.HyperlinkCtrl(panel, id=wx.ID_ANY, label="bilibili",
-                                                    url="https://github.com/yunshu-drwells?tab=repositories")
+                                                    url="https://space.bilibili.com/390383200?spm_id_from=333.1007.0.0")
 
         # github gitee bilibili
         # 鸣谢vits
@@ -544,7 +544,7 @@ class MyFrame(wx.Frame):
             nums_index = self.choice_students.GetSelection()
             nums = self.choice_students.GetString(nums_index)  # 要随机点名的人数
             stu_names = self.generate_random_names(int(nums))  # 获得随机nums个学生的随机名单
-            self.pv.roll_call(stu_names, self.chosen_device_index, self.pause_time)
+            self.pv.roll_call_list(stu_names, self.chosen_device_index, self.pause_time)
         else:
             self.label_log.SetLabel("error2: 没有学生被选中")
             print("没有学生被选中")
