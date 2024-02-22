@@ -149,3 +149,10 @@ pip install update pyinstaller
 
 pyinstaller --noconfirm --noconsole --onedir main.py --name RoolCallSystem
 ``` -->
+
+
+# 捐献
+
+<p align="center"> <div align="middle"><img src="https://github.com/yunshu-drwells/Notes/blob/main/donate%20alipay.jpg" alt="202402191238496" width="720" height=""></div></p>
+
+<p align="center"> <div align="middle"><img src="https://github.com/yunshu-drwells/Notes/blob/main/donate%20wechat.jpg" alt="202402191238496" width="720" height=""></div></p>
